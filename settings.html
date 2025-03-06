@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Ryans Simple AI Settings</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <h2>yans Simple AI Settings</h2>
+    <label>Select AI Provider:</label>
+    <select id="aiProvider">
+        <option value="openai">OpenAI (ChatGPT)</option>
+        <option value="claude">Claude (Anthropic)</option>
+        <option value="gemini">Google Gemini</option>
+    </select>
+    <label>OpenAI API Key:</label>
+    <input type="password" id="openaiKey">
+    <label>Claude API Key:</label>
+    <input type="password" id="claudeKey">
+    <label>Gemini API Key:</label>
+    <input type="password" id="geminiKey">
+    <button id="saveSettings">Save</button>
+    <script src="settings.js"></script>
+</body>
+</html>
