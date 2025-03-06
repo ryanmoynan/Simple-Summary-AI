@@ -3,11 +3,15 @@ document.addEventListener("DOMContentLoaded", function () {
     const settingsBtn = document.getElementById("settings-btn");
     const summaryOutput = document.getElementById("summary-output");
     const loadingSpinner = document.getElementById("loading-spinner");
+    const historyContainer = document.getElementById("history-container");
 
-    if (!summarizeBtn || !settingsBtn || !summaryOutput || !loadingSpinner) {
+    if (!summarizeBtn || !settingsBtn || !summaryOutput || !loadingSpinner || !historyContainer) {
         console.error("Popup UI elements not found.");
         return;
     }
+
+    // Load history on startup
+    loadHistory();
 
     summarizeBtn.addEventListener("click", function () {
         chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
@@ -36,17 +40,35 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 console.log("Extracted page text:", extractedText.substring(0, 100));
 
-                // Send the text to background.js for summarization
-                chrome.runtime.sendMessage({ action: "summarize", text: extractedText }, function (response) {
-                    console.log("Popup received response:", response);
-
-                    loadingSpinner.style.display = "none";
-
-                    if (response && response.summary) {
-                        summaryOutput.innerText = response.summary;
-                    } else {
-                        summaryOutput.innerText = "Error: No summary received.";
+                // Check cache first
+                chrome.storage.local.get(["cachedSummaries"], function (data) {
+                    const cachedSummaries = data.cachedSummaries || {};
+                    if (cachedSummaries[extractedText]) {
+                        console.log("Using cached summary.");
+                        summaryOutput.innerText = cachedSummaries[extractedText];
+                        loadingSpinner.style.display = "none";
+                        return;
                     }
+
+                    // Send request to background.js
+                    chrome.runtime.sendMessage({ action: "summarize", text: extractedText }, function (response) {
+                        console.log("Popup received response:", response);
+
+                        loadingSpinner.style.display = "none";
+
+                        if (response && response.summary) {
+                            summaryOutput.innerText = response.summary;
+
+                            // Save to cache
+                            cachedSummaries[extractedText] = response.summary;
+                            chrome.storage.local.set({ cachedSummaries });
+
+                            // Save to history
+                            saveToHistory(response.summary);
+                        } else {
+                            summaryOutput.innerText = "Error: No summary received.";
+                        }
+                    });
                 });
             });
         });
@@ -55,6 +77,28 @@ document.addEventListener("DOMContentLoaded", function () {
     settingsBtn.addEventListener("click", function () {
         chrome.runtime.openOptionsPage();
     });
+
+    function saveToHistory(summary) {
+        chrome.storage.local.get(["summaryHistory"], function (data) {
+            let history = data.summaryHistory || [];
+            history.unshift(summary); // Add new summary to the top
+            history = history.slice(0, 10); // Limit to 10 entries
+            chrome.storage.local.set({ summaryHistory: history }, loadHistory);
+        });
+    }
+
+    function loadHistory() {
+        chrome.storage.local.get(["summaryHistory"], function (data) {
+            const history = data.summaryHistory || [];
+            historyContainer.innerHTML = "";
+            history.forEach((item, index) => {
+                const historyItem = document.createElement("div");
+                historyItem.classList.add("history-item");
+                historyItem.innerText = item;
+                historyContainer.appendChild(historyItem);
+            });
+        });
+    }
 });
 
 // Extract text from the page
