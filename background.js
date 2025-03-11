@@ -14,7 +14,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             // Customize prompt based on content type
             let prompt = "Summarize the following text:";
             if (message.isTranscript) {
-                prompt = "Summarize the following YouTube video transcript:";
+                console.log("This is a youtube video transcript summarisaiton.");
+                prompt = "Summarize the following YouTube video transcript highlighting the keypoint in bulletpoints, if they talk about crypto or stock please list these and their recommendations:";
             }
 
             // Send text to OpenAI API

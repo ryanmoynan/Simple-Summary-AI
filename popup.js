@@ -16,20 +16,26 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Extract text from the page
     function extractPageText() {
-        // Try to get YouTube transcript if on YouTube
         if (window.location.hostname.includes('youtube.com') && window.location.pathname.includes('/watch')) {
-            // Get transcript elements - this is a simplified approach
-            const transcriptItems = Array.from(document.querySelectorAll('yt-formatted-string.ytd-transcript-segment-renderer'));
+            const transcriptSegments = Array.from(document.querySelectorAll('ytd-transcript-segment-renderer yt-formatted-string.segment-text'));
             
-            if (transcriptItems && transcriptItems.length > 0) {
+            if (transcriptSegments.length > 0) {
+                const transcriptText = transcriptSegments.map(segment => segment.innerText).join(' ');
+    
+                // Limit transcript length to avoid exceeding request limits
+                const maxTextLength = 15000;
+                const trimmedTranscript = transcriptText.length > maxTextLength 
+                    ? transcriptText.substring(0, maxTextLength) + '...' 
+                    : transcriptText;
+    
                 return {
-                    text: transcriptItems.map(item => item.textContent).join(' '),
+                    text: trimmedTranscript,
                     isTranscript: true
                 };
             }
         }
-        
-        // Regular page content extraction
+    
+        // Default text extraction for non-YouTube pages
         return {
             text: document.body.innerText.slice(0, 5000),
             isTranscript: false
